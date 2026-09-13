@@ -1,0 +1,63 @@
+name: Scheduled Infinity Wiki Mirror to GitHub Pages
+
+on:
+  schedule:
+    - cron: '0 2 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  mirror-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout Repository
+      uses: actions/checkout@v5
+
+    - name: Set up Environment Variables
+      run: |
+        echo "WIKI_URL=https://infinitythewiki.com/" >> $GITHUB_ENV
+        echo "CURRENT_DATE=$(date -u +'%Y-%m-%d %H:%M:%S UTC')" >> $GITHUB_ENV
+
+    - name: Download Mirror
+      run: |
+        wget --mirror \
+             --page-requisites \
+             --adjust-extension \
+             --convert-links \
+             --no-parent \
+             --execute robots=off \
+             --no-http-keep-alive \
+             --reject-regex "(action=|title=Special:|title=Talk:|diff=|oldid=|printable=)" \
+             --reject "*action=*" \
+             --wait=2 \
+             --random-wait \
+             "${{ env.WIKI_URL }}" || WGET_EXIT=$?
+
+        echo "wget completed with exit code: ${WGET_EXIT}"
+
+        # 4 = Network failure / Wiki completely down
+        # 8 = Server error / 502 Bad Gateway / 504 Timeout / 404 Error
+        if [ "${WGET_EXIT}" -eq 4 ] || [ "${WGET_EXIT}" -eq 8 ]; then
+          echo "CRITICAL: wget failed due to a Server Error (502) or Network Timeout."
+          exit 1
+        fi
+
+        if [ "${WGET_EXIT}" -ne 0 ]; then
+          echo "wget failed for a different reason than network and I don't want it to proceed anyway"
+          exit $WGET_EXIT
+        fi
+
+    - name: Inject Mirror Banner
+      run: |
+        BANNER="<div style=\"background-color: #ffcc00; color: #000; text-align: center; padding: 12px; font-weight: bold; font-family: sans-serif; position: sticky; top: 0; z-index: 9999; border-bottom: 2px solid #e6b800;\"><b>ATTENTION</b>: This is an ARCHIVED MIRROR. Last updated: ${{ env.CURRENT_DATE }}. View live site at <a href=\"${{ env.WIKI_URL }}\" style=\"color: #0056b3;\">${{ env.WIKI_URL }}<\/a><\/div>"
+
+        find . -type f -name "*.html" -exec sed -i "s/<body[^>]*>/&\n$BANNER/" {} +
+
+    - name: Deploy mirror with gh-pages
+      uses: JamesIves/github-pages-deploy-action@v4
+      with:
+        folder: .
+        branch: gh-pages
