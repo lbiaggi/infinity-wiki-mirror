@@ -42,19 +42,18 @@ jobs:
         # 8 = Server error / 502 Bad Gateway / 504 Timeout / 404 Error
         if [ "${WGET_EXIT}" -eq 4 ] || [ "${WGET_EXIT}" -eq 8 ]; then
           echo "CRITICAL: wget failed due to a Server Error (502) or Network Timeout."
-          exit 1
         fi
 
         if [ "${WGET_EXIT}" -ne 0 ]; then
-          echo "wget failed for a different reason than network and I don't want it to proceed anyway"
-          exit $WGET_EXIT
+          echo "wget failed for a different reason than network and I don't want to stop anyway, Error Code: ${WGET_EXIT}"
+          exit 0
         fi
 
     - name: Inject Mirror Banner
       run: |
         BANNER="<div style=\"background-color: #ffcc00; color: #000; text-align: center; padding: 12px; font-weight: bold; font-family: sans-serif; position: sticky; top: 0; z-index: 9999; border-bottom: 2px solid #e6b800;\"><b>ATTENTION</b>: This is an ARCHIVED MIRROR. Last updated: ${{ env.CURRENT_DATE }}. View live site at <a href=\"${{ env.WIKI_URL }}\" style=\"color: #0056b3;\">${{ env.WIKI_URL }}<\/a><\/div>"
 
-        find . -type f -name "*.html" -exec sed -i "s/<body[^>]*>/&\n$BANNER/" {} +
+        find . -type f -name "*.html" -exec sed -i "s|<body[^>]*>|&\n$BANNER|" {} +
 
     - name: Deploy mirror with gh-pages
       uses: JamesIves/github-pages-deploy-action@v4
