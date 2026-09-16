@@ -37,6 +37,9 @@ jobs:
               --reject-regex "(action=|title=Special:|title=Talk:|diff=|oldid=|printable=)" \
               --reject "*action=*" \
               --max-threads=4 \
+              --wait=1 \
+              --random-wait \
+              --user-agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36" \
               --compression=gzip \
               "${{ env.WIKI_URL }}" || WGET_EXIT=$?
 
@@ -66,9 +69,9 @@ jobs:
 
         INTERCEPT_JS='<script>window.addEventListener("DOMContentLoaded", () => { const pf = new PagefindUI({ element: "#pagefind-search-target", showImages: false }); const mwForm = document.querySelector("form#searchform, form.mw-search-form"); const mwInput = document.querySelector("input[type=\"search\"], #searchInput"); if (mwForm && mwInput) { mwForm.addEventListener("submit", (e) => { e.preventDefault(); const query = mwInput.value.trim(); if (query) { document.getElementById("search-results-overlay").style.display = "block"; pf.triggerSearch(query); } }); } });</script>'
 
-        find . -type f -name \"*.html\" -exec sed -i \"s|<body[^>]*>|&\n$BANNER|\" {} +
+        find . -type f -name "*.html" -exec sed -i "s|<body[^>]*>|\&\n$BANNER|" {} +
 
-        find . -type f -name \"*.html\" -exec sed -i \"s|$BANNER|&\n$SEARCH_ASSETS\n$INTERCEPT_JS|\" {} +
+        find . -type f -name "*.html" -exec sed -i "s|$BANNER|\&\n$SEARCH_ASSETS\n$INTERCEPT_JS|" {} +
 
     - name: Deploy mirror with gh-pages
       uses: JamesIves/github-pages-deploy-action@v4
