@@ -21,41 +21,37 @@ jobs:
         echo "WIKI_URL=https://infinitythewiki.com/" >> $GITHUB_ENV
         echo "CURRENT_DATE=$(date -u +'%Y-%m-%d %H:%M:%S UTC')" >> $GITHUB_ENV
 
+    - name: Install httrack
+      run: |
+        sudo apt-get update && sudo apt-get install -y httrack
+
+
     - name: Download Mirror
       run: |
-        wget  --mirror \
-              --page-requisites \
-              --adjust-extension \
-              --convert-links \
-              --no-parent \
-              --execute robots=off \
-              --no-http-keep-alive \
-              --reject-regex "(action=|title=Special:|title=Talk:|diff=|oldid=|printable=)" \
-              --reject "*action=*" \
-              --wait=1 \
-              --random-wait \
-              --execute robots=off \
-              --user-agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36" \
-              --compression=gzip \
-              "${{ env.WIKI_URL }}" || WGET_EXIT=$?
+        httrack "${{ env.WIKI_URL }}" \
+        -O "./scratchpad" \
+        -w \
+        -c4 \
+        --robots=0 \
+        --disable-security-limits \
+        --max-rate=0 \
+        "+*.html" "+*.css" "+*.js" "+*.png" "+*.jpg" "+*.gif" "+*.svg" "+*.webp" \
+        "-*action=*" "-*title=Special:*" "-*title=Talk:*" "-*title=User:*" \
+        "-*title=Category:*" "-*title=File:*" "-*diff=*" "-*oldid=*" \
+        "-*printable=*" "-*limit=*" "-*dir=*" "-*redirect=*" \
+        "-load.php*" "-api.php*" "-rest.php*" || EXIT_CODE=$?
 
-        echo "wget completed with exit code: ${WGET_EXIT}"
+        echo "completed with exit code: ${EXIT_CODE}"
 
-        # 4 = Network failure / Wiki completely down
-        # 8 = Server error / 502 Bad Gateway / 504 Timeout / 404 Error
-        if [ "${WGET_EXIT}" -eq 4 ] || [ "${WGET_EXIT}" -eq 8 ]; then
-          echo "CRITICAL: wget failed due to a Server Error (502) or Network Timeout."
-        fi
-
-        if [ "${WGET_EXIT}" -ne 0 ]; then
-          echo "wget failed for a different reason than network and I don't want to stop anyway, Error Code: ${WGET_EXIT}"
+        if [ "${EXIT_CODE}" -ne 0 ]; then
+          echo "failed and I don't want to stop anyway, Error Code: ${EXIT_CODE}"
           exit 0
         fi
 
     - name: PageFind Search Indexer
       run: |
         # does it work? hope so.
-        npx pagefind --site .
+        npx pagefind --site scratchpad/infinitythewiki.com
 
     - name: Inject Stuff
       run: |
@@ -72,5 +68,5 @@ jobs:
     - name: Deploy mirror with gh-pages
       uses: JamesIves/github-pages-deploy-action@v4
       with:
-        folder: infinitythewiki.com
+        folder: scratchpad/infinitythewiki.com
         branch: gh-pages
