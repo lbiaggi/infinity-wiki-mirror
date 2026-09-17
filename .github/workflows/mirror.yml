@@ -59,8 +59,10 @@ jobs:
 
         SEARCH_ASSETS="<link href=\"/_pagefind/pagefind-ui.css\" rel=\"stylesheet\"><script src=\"/_pagefind/pagefind-ui.js\"></script><div id=\"search-results-overlay\" style=\"display:none; padding: 20px; max-width: 800px; margin: 20px auto; background: black; border: 1px solid 333; box-shadow: 0 4px 10px rgba(0,0,0,0.1); border-radius: 4px;\"><button onclick=\"document.getElementById('search-results-overlay').style.display='none'\" style=\"float:right; cursor:pointer;\">✕ Close Results</button><div id=\"pagefind-search-target\"></div></div>"
 
-        INTERCEPT_JS='<script>window.addEventListener("DOMContentLoaded", () => { const pf = new PagefindUI({ element: "#pagefind-search-target", showImages: false }); const mwForm = document.querySelector("form#searchform, form.mw-search-form"); const mwInput = document.querySelector("input[type=\"search\"], \#searchInput"); if (mwForm && mwInput) { mwForm.addEventListener("submit", (e) => { e.preventDefault(); const query = mwInput.value.trim(); if (query) { document.getElementById("search-results-overlay").style.display = "block"; pf.triggerSearch(query); } }); } });</script>'
 
+        read -r -d '' INTERCEPT_JS << EOF
+        <script>window.addEventListener("DOMContentLoaded",()=>{const p=new PagefindUI({element:"#pagefind-search-target",showImages:!1}),f=document.querySelector("form#searchform, form.mw-search-form"),i=document.querySelector('input[type="search"], #searchInput');f&&i&&f.addEventListener("submit",e=>{e.preventDefault();const q=i.value.trim();q&&(document.getElementById("search-results-overlay").style.display="block",p.triggerSearch(q))})});</script>
+        EOF
         find -type f -name "*.html" -exec sed -i \
           -e "s|<body\([^>]*\)>|<body\1>\n$BANNER|g" \
           -e "s|This is an ARCHIVED MIRROR.|\0\n$SEARCH_ASSETS\n$INTERCEPT_JS\n|g" {} +
