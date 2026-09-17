@@ -21,13 +21,9 @@ jobs:
         echo "WIKI_URL=https://infinitythewiki.com/" >> $GITHUB_ENV
         echo "CURRENT_DATE=$(date -u +'%Y-%m-%d %H:%M:%S UTC')" >> $GITHUB_ENV
 
-    - name: Install wget2
-      run: sudo apt-get update && sudo apt-get install -y wget2
-
     - name: Download Mirror
       run: |
-        # TIL: wget2
-        wget2 --mirror \
+        wget  --mirror \
               --page-requisites \
               --adjust-extension \
               --convert-links \
@@ -36,9 +32,9 @@ jobs:
               --no-http-keep-alive \
               --reject-regex "(action=|title=Special:|title=Talk:|diff=|oldid=|printable=)" \
               --reject "*action=*" \
-              --max-threads=4 \
               --wait=1 \
               --random-wait \
+              --execute robots=off \
               --user-agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36" \
               --compression=gzip \
               "${{ env.WIKI_URL }}" || WGET_EXIT=$?
