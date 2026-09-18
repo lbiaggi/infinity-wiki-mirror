@@ -57,12 +57,14 @@ jobs:
       run: |
         BANNER="<div style=\"background-color: #ffcc00; color: #000; text-align: center; padding: 12px; font-weight: bold; font-family: sans-serif; position: relative; display: block; clear: both; margin-top: 50px; width: 100%; border-bottom: 2px solid #e6b800; box-sizing: border-box;\"><b>NOTE:</b> This is an ARCHIVED MIRROR. Last updated: ${{ env.CURRENT_DATE }}. View live site at <a href=\"${{ env.WIKI_URL }}\" style=\"color: blue; text-decoration: underline;\">${{ env.WIKI_URL }}</a></div>"
 
-        SEARCH_ASSETS="<link href=\"/_pagefind/pagefind-ui.css\" rel=\"stylesheet\"><script src=\"/_pagefind/pagefind-ui.js\"></script><div id=\"search-results-overlay\" style=\"display:none; padding: 20px; max-width: 800px; margin: 20px auto; background: black; border: 1px solid 333; box-shadow: 0 4px 10px rgba(0,0,0,0.1); border-radius: 4px;\"><button onclick=\"document.getElementById('search-results-overlay').style.display='none'\" style=\"float:right; cursor:pointer;\">✕ Close Results</button><div id=\"pagefind-search-target\"></div></div>"
+        read -r -d '' SEARCH_ASSETS << 'EOF'
+        <link href="/_pagefind/pagefind-ui.css" rel="stylesheet"><script src="/_pagefind/pagefind-ui.js"></script><div id="search-results-overlay" style="display:none; padding: 20px; max-width: 800px; margin: 20px auto; background: black; border: 1px solid 333; box-shadow: 0 4px 10px rgba(0,0,0,0.1); border-radius: 4px;"><button onclick="document.getElementById('search-results-overlay').style.display='none'" style="float:right; cursor:pointer;">✕ Close Results</button><div id="pagefind-search-target"></div></div>
+EOF
 
 
-        read -r -d '' INTERCEPT_JS << EOF
+        read -r -d '' INTERCEPT_JS << 'EOF'
         <script>window.addEventListener("DOMContentLoaded",()=>{const p=new PagefindUI({element:"#pagefind-search-target",showImages:!1}),f=document.querySelector("form#searchform, form.mw-search-form"),i=document.querySelector('input[type="search"], #searchInput');f&&i&&f.addEventListener("submit",e=>{e.preventDefault();const q=i.value.trim();q&&(document.getElementById("search-results-overlay").style.display="block",p.triggerSearch(q))})});</script>
-        EOF
+EOF
         find -type f -name "*.html" -exec sed -i \
           -e "s|<body\([^>]*\)>|<body\1>\n$BANNER|g" \
           -e "s|This is an ARCHIVED MIRROR.|\0\n$SEARCH_ASSETS\n$INTERCEPT_JS\n|g" {} +
